@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расписание</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 25px 15px 50px;
+    background: #111318;
+    color: #f1f1f1;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+}
+
+.header {
+    margin-bottom: 30px;
+}
+
+.date {
+    font-size: 42px;
+    font-weight: 800;
+}
+
+.weekday {
+    margin-top: 8px;
+    color: #aaa;
+    font-size: 17px;
+}
+
+.week-type {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    background: #252a35;
+    color: #85aaff;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid #303541;
+}
+
+table {
+    width: 100%;
+    min-width: 650px;
+    border-collapse: collapse;
+    background: #191d25;
+    table-layout: fixed;
+}
+
+th, td {
+    border: 1px solid #303541;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    height: 55px;
+    background: #222733;
+    color: #aaa;
+    font-size: 13px;
+}
+
+th:first-child {
+    width: 85px;
+}
+
+td {
+    height: 105px;
+}
+
+.day-cell {
+    font-weight: bold;
+    color: white;
+}
+
+.day-number {
+    display: block;
+    font-size: 23px;
+    margin-bottom: 5px;
+}
+
+.day-name {
+    display: block;
+    font-size: 12px;
+}
+
+.day-0 { background: #34304e; }
+.day-1 { background: #29434b; }
+.day-2 { background: #493b2d; }
+.day-3 { background: #3d3048; }
+.day-4 { background: #304637; }
+
+.subject {
+    width: 100%;
+    min-height: 75px;
+    padding: 10px 5px;
+    border: 0;
+    border-radius: 9px;
+    background: #292f3b;
+    color: white;
+    cursor: pointer;
+}
+
+.subject:hover {
+    background: #39465e;
+}
+
+.subject-name {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.3;
+}
+
+.teacher {
+    display: block;
+    margin-top: 8px;
+    color: #aab5c8;
+    font-size: 12px;
+}
+
+.homework-mark {
+    display: block;
+    margin-top: 7px;
+    color: #91b5ff;
+    font-size: 11px;
+}
+
+.empty {
+    background: #171b22;
+}
+
+.warning {
+    margin-top: 30px;
+    padding: 22px;
+    border: 1px solid #513b32;
+    border-radius: 12px;
+    background: #251d1b;
+    cursor: pointer;
+}
+
+.warning h2 {
+    margin: 0 0 12px;
+    color: #ff916e;
+    font-size: 22px;
+    letter-spacing: 2px;
+}
+
+.warning p {
+    margin: 0;
+    color: #e2c5ba;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.hint {
+    margin-top: 18px;
+    color: #656d7c;
+    text-align: center;
+    font-size: 12px;
+}
+
+dialog {
+    width: min(450px, calc(100% - 30px));
+    padding: 25px;
+    border: 1px solid #414958;
+    border-radius: 15px;
+    background: #202530;
+    color: white;
+}
+
+dialog::backdrop {
+    background: rgba(0,0,0,0.75);
+}
+
+dialog textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 12px;
+    border: 1px solid #414958;
+    border-radius: 8px;
+    background: #141820;
+    color: white;
+    font: inherit;
+}
+
+.dialog-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.dialog-buttons button {
+    flex: 1;
+    padding: 12px;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.save {
+    background: #6388d8;
+    color: white;
+}
+
+.cancel {
+    background: #353c49;
+    color: white;
+}
+
+.delete {
+    background: #713d3d;
+    color: white;
+}
+
+@media (max-width: 600px) {
+    .date { font-size: 34px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+    <header class="header">
+        <div>
+            <div class="date" id="date"></div>
+            <div class="weekday" id="weekday"></div>
+        </div>
+        <div class="week-type" id="weekType"></div>
+    </header>
+
+    <table>
+        <thead>
+            <tr>
+                <th>День</th>
+                <th>09:00</th>
+                <th>10:30</th>
+                <th>12:00</th>
+            </tr>
+        </thead>
+        <tbody id="schedule"></tbody>
+    </table>
+
+    <section class="warning" id="warning">
+        <h2>ПРЕДУПРЕЖДЕНИЕ</h2>
+        <p id="warningText">Нажми, чтобы добавить предупреждение.</p>
+    </section>
+
+</div>
+
+<dialog id="homeworkDialog">
+    <h3 id="dialogTitle">Домашнее задание</h3>
+    <textarea id="homeworkInput" placeholder="Напиши домашнее задание..."></textarea>
+    <div class="dialog-buttons">
+        <button id="saveHomework">Сохранить</button>
+        <button id="closeDialog">Закрыть</button>
+    </div>
+</dialog>
+
+<dialog id="warningDialog">
+    <h3>Редактировать предупреждение</h3>
+    <textarea id="warningInput" placeholder="Текст предупреждения..."></textarea>
+    <div class="dialog-buttons">
+        <button id="saveWarning">Сохранить</button>
+        <button id="closeWarning">Закрыть</button>
+    </div>
+</dialog>
+
+<script>
+const teachers = {
+    "Математика": "Рауф мэллим",
+    "Английский": "Гюльнар ханым",
+    "Физика": "Севиндж ханым",
+    "АДИАК": "Гюльшен ханым",
+    "Программирование": "Физули мэллим",
+    "Информационные технологии": "Милана ханым"
+};
+
+const lowerWeek = [
+    ["Математика", "Английский", "Физика"],
+    ["Физика", "Физика", "АДИАК"],
+    ["Программирование", "Программирование", "АДИАК"],
+    [null, "Информационные технологии", null],
+    [null, "Английский", null]
+];
+
+const upperWeek = [
+    ["Математика", "Английский", "Физика"],
+    ["Математика", "Программирование", "АДИАК"],
+    ["Программирование", "Информационные технологии", "Информационные технологии"],
+    [null, "Информационные технологии", null],
+    [null, "Английский", null]
+];
+
+const dayNames = [
+    "Понедельник",
+    "Вторник",
+    "Среда",
+    "Четверг",
+    "Пятница"
+];
+
+const dayClasses = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday"
+];
+
+let currentHomeworkKey = "";
+
+const homeworkDialog = document.getElementById("homeworkDialog");
+const homeworkInput = document.getElementById("homeworkInput");
+const warningDialog = document.getElementById("warningDialog");
+const warningInput = document.getElementById("warningInput");
+
+function dateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+function mondayOfWeek(date) {
+    const result = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+    );
+
+    const day = result.getDay();
+
+    if (day === 0) {
+        result.setDate(result.getDate() + 1);
+    } else if (day === 6) {
+        result.setDate(result.getDate() + 2);
+    } else {
+        result.setDate(result.getDate() - day + 1);
+    }
+
+    return result;
+}
+
+function isUpperWeek(date) {
+    const anchor = new Date(2026, 9, 31);
+
+    const saturday = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+    );
+
+    const daysFromSaturday = (saturday.getDay() + 1) % 7;
+    saturday.setDate(saturday.getDate() - daysFromSaturday);
+
+    const weeks = Math.round(
+        (saturday - anchor) / 604800000
+    );
+
+    return ((weeks % 2) + 2) % 2 === 0;
+}
+function render() {
+    const today = new Date();
+    const monday = mondayOfWeek(today);
+    const upper = isUpperWeek(today);
+
+    const monthNames = [
+        "января", "февраля", "марта", "апреля",
+        "мая", "июня", "июля", "августа",
+        "сентября", "октября", "ноября", "декабря"
+    ];
+
+    document.getElementById("date").textContent =
+        `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+
+    document.getElementById("weekday").textContent =
+        today.toLocaleDateString("ru-RU", { weekday: "long" });
+
+    document.getElementById("weekType").textContent =
+        upper ? "ВЕРХНЯЯ НЕДЕЛЯ" : "НИЖНЯЯ НЕДЕЛЯ";
+
+    const schedule = document.getElementById("schedule");
+    schedule.innerHTML = "";
+
+    const week = upper ? upperWeek : lowerWeek;
+
+    for (let i = 0; i < 5; i++) {
+        const row = document.createElement("tr");
+
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + i);
+
+        const dayCell = document.createElement("td");
+        dayCell.className = `day-cell ${dayClasses[i]}`;
+
+        dayCell.innerHTML = `
+            <div class="day-number">${dayDate.getDate()}</div>
+            <div class="day-name">${dayNames[i]}</div>
+        `;
+
+        row.appendChild(dayCell);
+
+        for (let lesson = 0; lesson < 3; lesson++) {
+            const cell = document.createElement("td");
+            const subject = week[i][lesson];
+
+            if (subject) {
+                const key = `${dateKey(dayDate)}_${lesson}`;
+                const homework = localStorage.getItem(key);
+
+                cell.className = "subject-cell";
+                cell.innerHTML = `
+                    <div class="subject">${subject}</div>
+                    <div class="teacher">${teachers[subject]}</div>
+                    ${homework ? '<div class="homework-mark">Есть ДЗ</div>' : ""}
+                `;
+
+                cell.addEventListener("click", () => {
+                    openHomework(key, subject, homework || "");
+                });
+            } else {
+                cell.className = "empty-cell";
+                cell.textContent = "--";
+            }
+
+            row.appendChild(cell);
+        }
+
+        schedule.appendChild(row);
+    }
+}
+
+function openHomework(key, subject, homework) {
+    currentHomeworkKey = key;
+
+    document.getElementById("dialogTitle").textContent =
+        `Домашнее задание: ${subject}`;
+
+    homeworkInput.value = homework;
+    homeworkDialog.showModal();
+}
+
+document.getElementById("saveHomework").addEventListener("click", () => {
+    const value = homeworkInput.value.trim();
+
+    if (value) {
+        localStorage.setItem(currentHomeworkKey, value);
+    } else {
+        localStorage.removeItem(currentHomeworkKey);
+    }
+
+    homeworkDialog.close();
+    render();
+});
+
+document.getElementById("closeDialog").addEventListener("click", () => {
+    homeworkDialog.close();
+});
+
+const warningText = document.getElementById("warningText");
+
+function loadWarning() {
+    warningText.textContent =
+        localStorage.getItem("myWarning") ||
+        "Нажми, чтобы добавить предупреждение.";
+}
+
+document.getElementById("warning").addEventListener("click", () => {
+    warningInput.value = localStorage.getItem("myWarning") || "";
+    warningDialog.showModal();
+});
+
+document.getElementById("saveWarning").addEventListener("click", () => {
+    const value = warningInput.value.trim();
+
+    localStorage.setItem("myWarning", value);
+    warningDialog.close();
+    loadWarning();
+});
+
+document.getElementById("closeWarning").addEventListener("click", () => {
+    warningDialog.close();
+});
+
+loadWarning();
+render();
+</script>
+</body>
+</html>
